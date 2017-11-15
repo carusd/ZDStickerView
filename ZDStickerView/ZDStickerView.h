@@ -54,5 +54,8 @@ typedef enum {
 #ifdef ZDSTICKERVIEW_LONGPRESS
 - (void)stickerViewDidLongPressed:(ZDStickerView *)sticker;
 #endif
+- (void)stickerView:(ZDStickerView *)sticker didTranslate:(CGPoint)point;
+- (void)stickerView:(ZDStickerView *)sticker didChangeSize:(CGSize)size;
+- (void)stickerView:(ZDStickerView *)sticker didChangeRadian:(CGFloat)radian;
 - (void)stickerViewDidCustomButtonTap:(ZDStickerView *)sticker;
 @end

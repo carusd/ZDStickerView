@@ -157,6 +157,10 @@
                                                  kZDStickerViewControlSize);
             
             self.prevPoint = [recognizer locationOfTouch:0 inView:self];
+            
+            if ([self.stickerViewDelegate respondsToSelector:@selector(stickerView:didChangeSize:)]) {
+                [self.stickerViewDelegate stickerView:self didChangeSize:CGSizeMake(wChange, hChange)];
+            }
         }
 
         /* Rotation */
@@ -168,6 +172,9 @@
         if (NO == self.preventsResizing)
         {
             self.transform = CGAffineTransformMakeRotation(-angleDiff);
+            if ([self.stickerViewDelegate respondsToSelector:@selector(stickerView:didChangeRadian:)]) {
+                [self.stickerViewDelegate stickerView:self didChangeRadian:-angleDiff];
+            }
         }
 
         self.borderView.frame = CGRectInset(self.bounds, kSPUserResizableViewGlobalInset, kSPUserResizableViewGlobalInset);
@@ -435,6 +442,9 @@
     }
 
     self.center = newCenter;
+    if ([self.stickerViewDelegate respondsToSelector:@selector(stickerView:didTranslate:)]) {
+        [self.stickerViewDelegate stickerView:self didTranslate:CGPointMake(touchPoint.x - self.touchStart.x, touchPoint.y - self.touchStart.y)];
+    }
 }
 
 
