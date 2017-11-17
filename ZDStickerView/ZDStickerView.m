@@ -10,10 +10,7 @@
 #import "SPGripViewBorderView.h"
 
 
-#define kSPUserResizableViewGlobalInset 5.0
 #define kSPUserResizableViewDefaultMinWidth 48.0
-#define kSPUserResizableViewInteractiveBorderSize 10.0
-#define kZDStickerViewControlSize 36.0
 
 
 
@@ -39,14 +36,6 @@
 
 @implementation ZDStickerView
 
-/*
-   // Only override drawRect: if you perform custom drawing.
-   // An empty implementation adversely affects performance during animation.
-   - (void)drawRect:(CGRect)rect
-   {
-    // Drawing code
-   }
- */
 
 #ifdef ZDSTICKERVIEW_LONGPRESS
 - (void)longPress:(UIPanGestureRecognizer *)recognizer
@@ -114,16 +103,16 @@
                                      self.bounds.origin.y,
                                      self.minWidth+1,
                                      self.minHeight+1);
-            self.resizingControl.frame =CGRectMake(self.bounds.size.width-kZDStickerViewControlSize,
-                                                   self.bounds.size.height-kZDStickerViewControlSize,
-                                                   kZDStickerViewControlSize,
-                                                   kZDStickerViewControlSize);
-            self.deleteControl.frame = CGRectMake(0, 0,
-                                                  kZDStickerViewControlSize, kZDStickerViewControlSize);
-            self.customControl.frame =CGRectMake(self.bounds.size.width-kZDStickerViewControlSize,
+            self.resizingControl.frame =CGRectMake(self.bounds.size.width-self.controlBtnSize.width,
+                                                   self.bounds.size.height-self.controlBtnSize.height,
+                                                   self.controlBtnSize.width,
+                                                   self.controlBtnSize.height);
+            self.deleteControl.frame = CGRectMake(self.lt_controlInset.width, self.lt_controlInset.height,
+                                                  self.controlBtnSize.width, self.controlBtnSize.height);
+            self.customControl.frame =CGRectMake(self.bounds.size.width-self.controlBtnSize.width,
                                                  0,
-                                                 kZDStickerViewControlSize,
-                                                 kZDStickerViewControlSize);
+                                                 self.controlBtnSize.width,
+                                                 self.controlBtnSize.height);
             self.prevPoint = [recognizer locationInView:self];
         }
         // Resizing
@@ -146,15 +135,15 @@
             self.bounds = CGRectMake(self.bounds.origin.x, self.bounds.origin.y,
                                      self.bounds.size.width + (wChange),
                                      self.bounds.size.height + (hChange));
-            self.resizingControl.frame =CGRectMake(self.bounds.size.width-kZDStickerViewControlSize,
-                                                   self.bounds.size.height-kZDStickerViewControlSize,
-                                                   kZDStickerViewControlSize, kZDStickerViewControlSize);
-            self.deleteControl.frame = CGRectMake(0, 0,
-                                                  kZDStickerViewControlSize, kZDStickerViewControlSize);
-            self.customControl.frame =CGRectMake(self.bounds.size.width-kZDStickerViewControlSize,
+            self.resizingControl.frame =CGRectMake(self.bounds.size.width-self.controlBtnSize.width,
+                                                   self.bounds.size.height-self.controlBtnSize.height,
+                                                   self.controlBtnSize.width, self.controlBtnSize.height);
+            self.deleteControl.frame = CGRectMake(self.lt_controlInset.width, self.lt_controlInset.height,
+                                                  self.controlBtnSize.width, self.controlBtnSize.height);
+            self.customControl.frame =CGRectMake(self.bounds.size.width-self.controlBtnSize.width,
                                                  0,
-                                                 kZDStickerViewControlSize,
-                                                 kZDStickerViewControlSize);
+                                                 self.controlBtnSize.width,
+                                                 self.controlBtnSize.height);
             
             self.prevPoint = [recognizer locationOfTouch:0 inView:self];
             
@@ -169,15 +158,16 @@
 
         float angleDiff = self.deltaAngle - ang;
 
+        NSLog(@"aaaaaaaaaaa  %f", angleDiff);
         if (NO == self.preventsResizing)
         {
             self.transform = CGAffineTransformMakeRotation(-angleDiff);
-            if ([self.stickerViewDelegate respondsToSelector:@selector(stickerView:didChangeRadian:)]) {
-                [self.stickerViewDelegate stickerView:self didChangeRadian:-angleDiff];
+            if ([self.stickerViewDelegate respondsToSelector:@selector(stickerView:didChangeToRadian:)]) {
+                [self.stickerViewDelegate stickerView:self didChangeToRadian:-angleDiff];
             }
         }
 
-        self.borderView.frame = CGRectInset(self.bounds, kSPUserResizableViewGlobalInset, kSPUserResizableViewGlobalInset);
+        self.borderView.frame = CGRectInset(self.bounds, self.borderInset, self.borderInset);
         [self.borderView setNeedsDisplay];
 
         [self setNeedsDisplay];
@@ -190,11 +180,37 @@
     }
 }
 
+- (void)setBorderColor:(UIColor *)borderColor {
+    _borderColor = borderColor;
+    
+    self.borderView.borderColor = borderColor;
+}
 
+- (void)setBorderInset:(CGFloat)borderInset {
+    _borderInset = borderInset;
+    
+    self.borderView.frame = CGRectInset(self.bounds, self.borderInset, self.borderInset);
+    [self setNeedsDisplay];
+}
+
+- (void)setLt_controlInset:(CGSize)lt_controlInset {
+    _lt_controlInset = lt_controlInset;
+    
+    self.deleteControl.frame = CGRectMake(_lt_controlInset.width, _lt_controlInset.height,
+                                          self.controlBtnSize.width, self.controlBtnSize.height);
+    [self setNeedsDisplay];
+}
 
 - (void)setupDefaultAttributes
 {
-    self.borderView = [[SPGripViewBorderView alloc] initWithFrame:CGRectInset(self.bounds, kSPUserResizableViewGlobalInset, kSPUserResizableViewGlobalInset)];
+    self.controlBtnSize = CGSizeMake(23, 23);
+    self.borderInset = 10.5;
+    self.contentInset = 5;
+    self.lt_controlInset = CGSizeZero;
+    
+    self.borderView = [[SPGripViewBorderView alloc] initWithFrame:CGRectInset(self.bounds, self.borderInset, self.borderInset)];
+//    self.borderView.backgroundColor = [UIColor redColor];
+    self.borderView.borderColor = [UIColor whiteColor];
     [self.borderView setHidden:YES];
     [self addSubview:self.borderView];
 
@@ -223,8 +239,8 @@
     [self addGestureRecognizer:longpress];
 #endif
 
-    self.deleteControl = [[UIImageView alloc]initWithFrame:CGRectMake(0, 0,
-                                                                      kZDStickerViewControlSize, kZDStickerViewControlSize)];
+    self.deleteControl = [[UIImageView alloc]initWithFrame:CGRectMake(self.lt_controlInset.width, self.lt_controlInset.height,
+                                                                      self.controlBtnSize.width, self.controlBtnSize.height)];
     self.deleteControl.backgroundColor = [UIColor clearColor];
     self.deleteControl.image = [UIImage imageNamed:@"ZDStickerView.bundle/ZDBtn3.png"];
     self.deleteControl.userInteractionEnabled = YES;
@@ -234,9 +250,9 @@
     [self.deleteControl addGestureRecognizer:singleTap];
     [self addSubview:self.deleteControl];
 
-    self.resizingControl = [[UIImageView alloc]initWithFrame:CGRectMake(self.frame.size.width-kZDStickerViewControlSize,
-                                                                        self.frame.size.height-kZDStickerViewControlSize,
-                                                                        kZDStickerViewControlSize, kZDStickerViewControlSize)];
+    self.resizingControl = [[UIImageView alloc]initWithFrame:CGRectMake(self.frame.size.width-self.controlBtnSize.width,
+                                                                        self.frame.size.height-self.controlBtnSize.height,
+                                                                        self.controlBtnSize.width, self.controlBtnSize.height)];
     self.resizingControl.backgroundColor = [UIColor clearColor];
     self.resizingControl.userInteractionEnabled = YES;
     self.resizingControl.image = [UIImage imageNamed:@"ZDStickerView.bundle/ZDBtn2.png.png"];
@@ -246,9 +262,9 @@
     [self.resizingControl addGestureRecognizer:panResizeGesture];
     [self addSubview:self.resizingControl];
 
-    self.customControl = [[UIImageView alloc]initWithFrame:CGRectMake(self.frame.size.width-kZDStickerViewControlSize,
+    self.customControl = [[UIImageView alloc]initWithFrame:CGRectMake(self.frame.size.width-self.controlBtnSize.width,
                                                                       0,
-                                                                      kZDStickerViewControlSize, kZDStickerViewControlSize)];
+                                                                      self.controlBtnSize.width, self.controlBtnSize.height)];
     self.customControl.backgroundColor = [UIColor clearColor];
     self.customControl.userInteractionEnabled = YES;
     self.customControl.image = nil;
@@ -301,8 +317,8 @@
     _contentView = newContentView;
 
     self.contentView.frame = CGRectInset(self.bounds,
-                                         kSPUserResizableViewGlobalInset + kSPUserResizableViewInteractiveBorderSize/2,
-                                         kSPUserResizableViewGlobalInset + kSPUserResizableViewInteractiveBorderSize/2);
+                                         self.contentInset + self.borderInset,
+                                         self.contentInset + self.borderInset);
 
     self.contentView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 
@@ -329,8 +345,8 @@
 {
     [super setFrame:newFrame];
     self.contentView.frame = CGRectInset(self.bounds,
-                                         kSPUserResizableViewGlobalInset + kSPUserResizableViewInteractiveBorderSize/2,
-                                         kSPUserResizableViewGlobalInset + kSPUserResizableViewInteractiveBorderSize/2);
+                                         self.contentInset + self.borderInset,
+                                         self.contentInset + self.borderInset);
 
     self.contentView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 
@@ -344,21 +360,21 @@
     }
 
     self.borderView.frame = CGRectInset(self.bounds,
-                                        kSPUserResizableViewGlobalInset,
-                                        kSPUserResizableViewGlobalInset);
+                                        self.borderInset,
+                                        self.borderInset);
 
-    self.resizingControl.frame =CGRectMake(self.bounds.size.width-kZDStickerViewControlSize,
-                                           self.bounds.size.height-kZDStickerViewControlSize,
-                                           kZDStickerViewControlSize,
-                                           kZDStickerViewControlSize);
+    self.resizingControl.frame =CGRectMake(self.bounds.size.width-self.controlBtnSize.width,
+                                           self.bounds.size.height-self.controlBtnSize.height,
+                                           self.controlBtnSize.width,
+                                           self.controlBtnSize.height);
 
-    self.deleteControl.frame = CGRectMake(0, 0,
-                                          kZDStickerViewControlSize, kZDStickerViewControlSize);
+    self.deleteControl.frame = CGRectMake(self.lt_controlInset.width, self.lt_controlInset.height,
+                                          self.controlBtnSize.width, self.controlBtnSize.height);
 
-    self.customControl.frame =CGRectMake(self.bounds.size.width-kZDStickerViewControlSize,
+    self.customControl.frame =CGRectMake(self.bounds.size.width-self.controlBtnSize.width,
                                          0,
-                                         kZDStickerViewControlSize,
-                                         kZDStickerViewControlSize);
+                                         self.controlBtnSize.width,
+                                         self.controlBtnSize.height);
 
     [self.borderView setNeedsDisplay];
 }
@@ -367,10 +383,10 @@
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    if ([self isEditingHandlesHidden])
-    {
-        return;
-    }
+//    if ([self isEditingHandlesHidden])
+//    {
+//        return;
+//    }
 
     [self enableTransluceny:YES];
 
@@ -442,8 +458,8 @@
     }
 
     self.center = newCenter;
-    if ([self.stickerViewDelegate respondsToSelector:@selector(stickerView:didTranslate:)]) {
-        [self.stickerViewDelegate stickerView:self didTranslate:CGPointMake(touchPoint.x - self.touchStart.x, touchPoint.y - self.touchStart.y)];
+    if ([self.stickerViewDelegate respondsToSelector:@selector(stickerView:didTranslateToCenter:)]) {
+        [self.stickerViewDelegate stickerView:self didTranslateToCenter:self.center];
     }
 }
 
@@ -465,6 +481,7 @@
     }
 
     CGPoint touch = [[touches anyObject] locationInView:self.superview];
+    NSLog(@"tttttttt  %@", NSStringFromCGPoint(touch));
     [self translateUsingTouchLocation:touch];
     self.touchStart = touch;
 }

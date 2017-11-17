@@ -31,6 +31,14 @@ typedef enum {
 @property (nonatomic) CGFloat minWidth;
 @property (nonatomic) CGFloat minHeight;
 
+@property (nonatomic) CGFloat borderInset; // should consider the border width
+@property (nonatomic) CGFloat contentInset;
+@property (nonatomic) CGSize lt_controlInset; // left top control btn inset
+
+@property (nonatomic) CGSize controlBtnSize;
+
+@property (nonatomic, strong) UIColor *borderColor;
+
 @property (weak, nonatomic) id <ZDStickerViewDelegate> stickerViewDelegate;
 
 - (void)hideDelHandle;
@@ -54,8 +62,8 @@ typedef enum {
 #ifdef ZDSTICKERVIEW_LONGPRESS
 - (void)stickerViewDidLongPressed:(ZDStickerView *)sticker;
 #endif
-- (void)stickerView:(ZDStickerView *)sticker didTranslate:(CGPoint)point;
+- (void)stickerView:(ZDStickerView *)sticker didTranslateToCenter:(CGPoint)point;
 - (void)stickerView:(ZDStickerView *)sticker didChangeSize:(CGSize)size;
-- (void)stickerView:(ZDStickerView *)sticker didChangeRadian:(CGFloat)radian;
+- (void)stickerView:(ZDStickerView *)sticker didChangeToRadian:(CGFloat)radian;
 - (void)stickerViewDidCustomButtonTap:(ZDStickerView *)sticker;
 @end
