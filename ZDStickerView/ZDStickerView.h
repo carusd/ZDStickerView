@@ -28,6 +28,7 @@ typedef enum {
 @property (nonatomic) BOOL preventsDeleting;                    // default = NO
 @property (nonatomic) BOOL preventsCustomButton;                // default = YES
 @property (nonatomic) BOOL translucencySticker;                // default = YES
+@property (nonatomic) BOOL preventsMoving; // default = NO
 @property (nonatomic) CGFloat minWidth;
 @property (nonatomic) CGFloat minHeight;
 

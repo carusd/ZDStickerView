@@ -388,6 +388,9 @@
 //        return;
 //    }
 
+    if (self.preventsMoving) {
+        return;
+    }
     [self enableTransluceny:YES];
 
     UITouch *touch = [touches anyObject];
@@ -402,6 +405,10 @@
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
+    if (self.preventsMoving) {
+        return;
+    }
+    
     [self enableTransluceny:NO];
 
     // Notify the delegate we've ended our editing session.
@@ -415,6 +422,10 @@
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
 {
+    if (self.preventsMoving) {
+        return;
+    }
+    
     [self enableTransluceny:NO];
 
     // Notify the delegate we've ended our editing session.
@@ -467,8 +478,13 @@
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
+    
     if ([self isEditingHandlesHidden])
     {
+        return;
+    }
+    
+    if (self.preventsMoving) {
         return;
     }
 
@@ -481,12 +497,10 @@
     }
 
     CGPoint touch = [[touches anyObject] locationInView:self.superview];
-    NSLog(@"tttttttt  %@", NSStringFromCGPoint(touch));
+    
     [self translateUsingTouchLocation:touch];
     self.touchStart = touch;
 }
-
-
 
 - (void)hideDelHandle
 {
