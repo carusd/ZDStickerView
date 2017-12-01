@@ -14,7 +14,7 @@
 
 
 
-@interface ZDStickerView ()
+@interface ZDStickerView ()<UIGestureRecognizerDelegate>
 
 @property (nonatomic, strong) SPGripViewBorderView *borderView;
 
@@ -78,10 +78,124 @@
     }
 }
 
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    BOOL right = [gestureRecognizer isKindOfClass:[UIPinchGestureRecognizer class]] && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]];
+    BOOL left = [otherGestureRecognizer isKindOfClass:[UIPinchGestureRecognizer class]] && [gestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]];
+    if (right || left) {
+        return YES;
+    } else {
+        return NO;
+    }
+}
 
 - (void)pinchTranslate:(UIPinchGestureRecognizer *)recognizer {
-    recognizer.view.transform = CGAffineTransformScale(recognizer.view.transform, recognizer.scale, recognizer.scale);
-    recognizer.scale = 1;
+    if (self.preventsResizing) {
+        return;
+    }
+    if (self.bounds.size.width < self.minWidth || self.bounds.size.height < self.minHeight)
+    {
+        self.bounds = CGRectMake(self.bounds.origin.x,
+                                 self.bounds.origin.y,
+                                 self.minWidth+1,
+                                 self.minHeight+1);
+        self.resizingControl.frame =CGRectMake(self.bounds.size.width-self.controlBtnSize.width,
+                                               self.bounds.size.height-self.controlBtnSize.height,
+                                               self.controlBtnSize.width,
+                                               self.controlBtnSize.height);
+        self.deleteControl.frame = CGRectMake(self.lt_controlInset.width, self.lt_controlInset.height,
+                                              self.controlBtnSize.width, self.controlBtnSize.height);
+        self.customControl.frame =CGRectMake(self.bounds.size.width-self.controlBtnSize.width,
+                                             0,
+                                             self.controlBtnSize.width,
+                                             self.controlBtnSize.height);
+        
+    }
+    // Resizing
+    else
+    {
+        CGFloat scale = recognizer.scale;
+        recognizer.scale = 1;
+        
+        float wChange = (scale - 1) * CGRectGetWidth(self.bounds);
+        float hChange = (scale - 1) * CGRectGetHeight(self.bounds);
+        
+        
+        if (ABS(wChange) > 50.0f || ABS(hChange) > 50.0f)
+        {
+            
+            return;
+        }
+        
+        self.bounds = CGRectMake(self.bounds.origin.x, self.bounds.origin.y,
+                                 self.bounds.size.width + (wChange),
+                                 self.bounds.size.height + (hChange));
+        self.resizingControl.frame =CGRectMake(self.bounds.size.width-self.controlBtnSize.width,
+                                               self.bounds.size.height-self.controlBtnSize.height,
+                                               self.controlBtnSize.width, self.controlBtnSize.height);
+        self.deleteControl.frame = CGRectMake(self.lt_controlInset.width, self.lt_controlInset.height,
+                                              self.controlBtnSize.width, self.controlBtnSize.height);
+        self.customControl.frame =CGRectMake(self.bounds.size.width-self.controlBtnSize.width,
+                                             0,
+                                             self.controlBtnSize.width,
+                                             self.controlBtnSize.height);
+        
+        self.borderView.frame = CGRectInset(self.bounds, self.borderInset, self.borderInset);
+        [self.borderView setNeedsDisplay];
+        
+        if ([self.stickerViewDelegate respondsToSelector:@selector(stickerView:didChangeSize:)]) {
+            [self.stickerViewDelegate stickerView:self didChangeSize:CGSizeMake(wChange, hChange)];
+        }
+    }
+    
+}
+
+- (void)panTranslate:(UIPanGestureRecognizer *)pan {
+    if (self.preventsMoving) {
+        return;
+    }
+    switch (pan.state) {
+        case UIGestureRecognizerStateBegan: {
+            
+            self.touchStart = [pan locationInView:self.superview];
+        }
+            break;
+        case UIGestureRecognizerStateChanged: {
+            CGPoint touch = [pan locationInView:self.superview];
+            
+            [self translateUsingTouchLocation:touch];
+            self.touchStart = touch;
+        }
+            break;
+        case UIGestureRecognizerStateEnded:
+            [self enableTransluceny:NO];
+            
+            // Notify the delegate we've ended our editing session.
+            if ([self.stickerViewDelegate respondsToSelector:@selector(stickerViewDidEndEditing:)])
+            {
+                [self.stickerViewDelegate stickerViewDidEndEditing:self];
+            }
+            break;
+        case UIGestureRecognizerStateCancelled:
+            [self enableTransluceny:NO];
+            
+            // Notify the delegate we've ended our editing session.
+            if ([self.stickerViewDelegate respondsToSelector:@selector(stickerViewDidCancelEditing:)])
+            {
+                [self.stickerViewDelegate stickerViewDidCancelEditing:self];
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+- (void)selectView:(UITapGestureRecognizer *)tap {
+    
+    [self enableTransluceny:YES];
+    if ([self.stickerViewDelegate respondsToSelector:@selector(stickerViewDidBeginEditing:)])
+    {
+        [self.stickerViewDelegate stickerViewDidBeginEditing:self];
+    }
 }
 
 - (void)resizeTranslate:(UIPanGestureRecognizer *)recognizer
@@ -273,7 +387,15 @@
     UIPinchGestureRecognizer *pinchGesture = [[UIPinchGestureRecognizer alloc]
                                               initWithTarget:self
                                               action:@selector(pinchTranslate:)];
+    pinchGesture.delegate = self;
     [self addGestureRecognizer:pinchGesture];
+    
+    UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panTranslate:)];
+    panGesture.delegate = self;
+    [self addGestureRecognizer:panGesture];
+    
+    UITapGestureRecognizer *selectGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(selectView:)];
+    [self addGestureRecognizer:selectGesture];
     
     UITapGestureRecognizer *customTapGesture = [[UITapGestureRecognizer alloc]
                                                 initWithTarget:self
@@ -381,62 +503,6 @@
 
 
 
-- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
-{
-//    if ([self isEditingHandlesHidden])
-//    {
-//        return;
-//    }
-
-    if (self.preventsMoving) {
-        return;
-    }
-    [self enableTransluceny:YES];
-
-    UITouch *touch = [touches anyObject];
-    self.touchStart = [touch locationInView:self.superview];
-    if ([self.stickerViewDelegate respondsToSelector:@selector(stickerViewDidBeginEditing:)])
-    {
-        [self.stickerViewDelegate stickerViewDidBeginEditing:self];
-    }
-}
-
-
-
-- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
-{
-    if (self.preventsMoving) {
-        return;
-    }
-    
-    [self enableTransluceny:NO];
-
-    // Notify the delegate we've ended our editing session.
-    if ([self.stickerViewDelegate respondsToSelector:@selector(stickerViewDidEndEditing:)])
-    {
-        [self.stickerViewDelegate stickerViewDidEndEditing:self];
-    }
-}
-
-
-
-- (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
-{
-    if (self.preventsMoving) {
-        return;
-    }
-    
-    [self enableTransluceny:NO];
-
-    // Notify the delegate we've ended our editing session.
-    if ([self.stickerViewDelegate respondsToSelector:@selector(stickerViewDidCancelEditing:)])
-    {
-        [self.stickerViewDelegate stickerViewDidCancelEditing:self];
-    }
-}
-
-
-
 - (void)translateUsingTouchLocation:(CGPoint)touchPoint
 {
     CGPoint newCenter = CGPointMake(self.center.x + touchPoint.x - self.touchStart.x,
@@ -474,40 +540,10 @@
     }
 }
 
-
-
-- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
-{
-    
-    if ([self isEditingHandlesHidden])
-    {
-        return;
-    }
-    
-    if (self.preventsMoving) {
-        return;
-    }
-
-    [self enableTransluceny:YES];
-
-    CGPoint touchLocation = [[touches anyObject] locationInView:self];
-    if (CGRectContainsPoint(self.resizingControl.frame, touchLocation))
-    {
-        return;
-    }
-
-    CGPoint touch = [[touches anyObject] locationInView:self.superview];
-    
-    [self translateUsingTouchLocation:touch];
-    self.touchStart = touch;
-}
-
 - (void)hideDelHandle
 {
     self.deleteControl.hidden = YES;
 }
-
-
 
 - (void)showDelHandle
 {
